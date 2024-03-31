@@ -102,37 +102,73 @@ mpl.ylabel('Order Count')
 mpl.xticks(rotation=45)
 mpl.tight_layout()
 
-#top 30 item
+#counts of items by region and category group
+pivot_table = pp_data.pivot_table(index='grass_region', columns='category_group', values='shopee_item_id', aggfunc='count')
+
+total_counts = pivot_table.sum(axis=1)
+sorted_regions = total_counts.sort_values(ascending=False).index
+pivot_table_sorted = pivot_table.loc[sorted_regions]
+
+
+mpl.figure(figsize=(12, 8))
+sb.heatmap(pivot_table_sorted, annot=True, fmt='g', cmap='viridis')
+mpl.title('Number of Items by Region and Category Group')
+mpl.xlabel('Category Group')
+mpl.ylabel('Region')
+mpl.tight_layout()
+
+
+
+#top 30 item by region
 top_30_percent_threshold = pp_data['shopee_order'].quantile(0.7)
 top_30_percent_items = pp_data[pp_data['shopee_order'] >= top_30_percent_threshold]
 
-#top 30 item by region
 mpl.figure(figsize=(10, 6))
 sb.countplot(data=top_30_percent_items, x='grass_region')
 mpl.title('Number of Top 30% Items by Region')
 mpl.xlabel('Region')
 mpl.ylabel('Number of Items')
 mpl.xticks(rotation=45)
-mpl.show()
 
-#competitiveness_status
-mpl.figure(figsize=(8, 8))
-rearranged_df['shopee_competitiveness_status'].value_counts().plot(kind='pie', autopct='%1.1f%%', startangle=140)
-mpl.title('Distribution of Competitiveness Status')
-mpl.ylabel('')
+#gmv by region and cat group
+gmv_by_region_cat = pp_data.groupby(['grass_region', 'category_group'])['shopee_gmv_usd'].sum().reset_index()
+
+sorted_gmv = gmv_by_region_cat.sort_values(by='shopee_gmv_usd', ascending=False)
+
+pivot_table = sorted_gmv.pivot(index='grass_region', columns='category_group', values='shopee_gmv_usd')
+
+mpl.figure(figsize=(12, 8))
+sb.heatmap(pivot_table, annot=True, fmt='.2f', cmap='viridis')
+mpl.title('Sum of GMV by Region and Category Group')
+mpl.xlabel('Category Group')
+mpl.ylabel('Region')
 mpl.tight_layout()
 
-#competitive status by region
+#counts of seller types by region
+pivot_table = pp_data.pivot_table(index='grass_region', columns='seller_type', values='shopee_item_id', aggfunc='count', fill_value=0)
+
+total_counts = pivot_table.sum(axis=1)
+sorted_regions = total_counts.sort_values(ascending=False).index
+pivot_table_sorted = pivot_table.loc[sorted_regions]
+
+mpl.figure(figsize=(12, 8))
+sb.heatmap(pivot_table_sorted, annot=True, fmt='g', cmap='viridis')
+mpl.title('Number of Seller Types by Region')
+mpl.xlabel('Seller Type')
+mpl.ylabel('Region')
+mpl.tight_layout()
+
+#Competitiveness Status by Region
+merged_cp = pd.merge(rearranged_df, pp_data, on='shopee_item_id',how='left')
+
 mpl.figure(figsize=(10, 6))
-sb.countplot(data=rearranged_df, x='grass_region', hue='shopee_model_competitiveness_status')
-mpl.title('Competitiveness Status Distribution by Region')
+sb.countplot(data=merged_cp, x='grass_region', hue='shopee_competitiveness_status')
+mpl.title('Competitiveness Status by Region')
 mpl.xlabel('Region')
 mpl.ylabel('Count')
+mpl.legend(title='Competitiveness Status', bbox_to_anchor=(1.05, 1), loc='upper left')
 mpl.xticks(rotation=45)
-mpl.legend(title='Competitiveness Status')
 mpl.tight_layout()
-
-
 mpl.show()
 
 
